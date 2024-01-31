@@ -37,7 +37,6 @@ namespace WebSocketSharp
     #region Private Fields
 
     private byte[] _data;
-    private long   _extDataLength;
     private long   _length;
 
     #endregion
@@ -72,7 +71,7 @@ namespace WebSocketSharp
     static PayloadData ()
     {
       Empty = new PayloadData (WebSocket.EmptyBytes, 0);
-      MaxLength = Int64.MaxValue;
+      MaxLength = long.MaxValue;
     }
 
     #endregion
@@ -96,46 +95,42 @@ namespace WebSocketSharp
       _length = _data.LongLength;
     }
 
+    internal PayloadData(ushort code, string reason, int httpStatusCode, string httpResponseBody)
+    {
+      _data = code.Append(reason);
+      _length = _data.LongLength;
+      HttpStatusCode = httpStatusCode;
+      HttpResponseBody = httpResponseBody;
+
+    }
+
     #endregion
 
     #region Internal Properties
 
-    internal ushort Code {
-      get {
-        return _length >= 2
-               ? _data.SubArray (0, 2).ToUInt16 (ByteOrder.Big)
-               : (ushort) 1005;
-      }
-    }
+    internal int HttpStatusCode { get; }
 
-    internal long ExtensionDataLength {
-      get {
-        return _extDataLength;
-      }
+    internal string HttpResponseBody { get; }
 
-      set {
-        _extDataLength = value;
-      }
-    }
+    internal ushort Code =>
+      _length >= 2
+        ? _data.SubArray (0, 2).ToUInt16 (ByteOrder.Big)
+        : (ushort) 1005;
 
-    internal bool HasReservedCode {
-      get {
-        return _length >= 2 && Code.IsReservedStatusCode ();
-      }
-    }
+    internal long ExtensionDataLength { get; set; }
+
+    internal bool HasReservedCode => _length >= 2 && Code.IsReservedStatusCode ();
 
     internal string Reason {
       get {
         if (_length <= 2)
-          return String.Empty;
+          return string.Empty;
 
         var bytes = _data.SubArray (2, _length - 2);
 
-        string reason;
-
-        return bytes.TryGetUTF8DecodedString (out reason)
+        return bytes.TryGetUTF8DecodedString (out var reason)
                ? reason
-               : String.Empty;
+               : string.Empty;
       }
     }
 
@@ -143,27 +138,17 @@ namespace WebSocketSharp
 
     #region Public Properties
 
-    public byte[] ApplicationData {
-      get {
-        return _extDataLength > 0
-               ? _data.SubArray (_extDataLength, _length - _extDataLength)
-               : _data;
-      }
-    }
+    public byte[] ApplicationData =>
+      ExtensionDataLength > 0
+        ? _data.SubArray (ExtensionDataLength, _length - ExtensionDataLength)
+        : _data;
 
-    public byte[] ExtensionData {
-      get {
-        return _extDataLength > 0
-               ? _data.SubArray (0, _extDataLength)
-               : WebSocket.EmptyBytes;
-      }
-    }
+    public byte[] ExtensionData =>
+      ExtensionDataLength > 0
+        ? _data.SubArray (0, ExtensionDataLength)
+        : WebSocket.EmptyBytes;
 
-    public ulong Length {
-      get {
-        return (ulong) _length;
-      }
-    }
+    public ulong Length => (ulong) _length;
 
     #endregion
 

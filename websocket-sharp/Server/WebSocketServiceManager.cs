@@ -29,6 +29,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using WebSocketSharp.Net;
 
 namespace WebSocketSharp.Server
 {
@@ -49,12 +51,18 @@ namespace WebSocketSharp.Server
     private volatile ServerState                     _state;
     private object                                   _sync;
     private TimeSpan                                 _waitTime;
+    private bool                                     _wildcardServices;
 
     #endregion
 
     #region Internal Constructors
 
-    internal WebSocketServiceManager (Logger log)
+    internal WebSocketServiceManager(bool wildcardServices = false)
+      : this(new Logger(), wildcardServices)
+    {
+    }
+
+    internal WebSocketServiceManager (Logger log, bool wildcardServices)
     {
       _log = log;
 
@@ -63,6 +71,7 @@ namespace WebSocketSharp.Server
       _state = ServerState.Ready;
       _sync = ((ICollection) _hosts).SyncRoot;
       _waitTime = TimeSpan.FromSeconds (1);
+      _wildcardServices = wildcardServices;
     }
 
     #endregion
@@ -288,10 +297,23 @@ namespace WebSocketSharp.Server
       string path, out WebSocketServiceHost host
     )
     {
-      path = path.TrimSlashFromEnd ();
-
+      // path = path.TrimSlashFromEnd ();
       lock (_sync)
-        return _hosts.TryGetValue (path, out host);
+      {
+        if (!_wildcardServices)
+        {
+          path = HttpUtility.UrlDecode(path).TrimSlashFromEnd();
+        }
+        else
+        {
+          foreach (var key in _hosts.Keys.Where(key => new System.Text.RegularExpressions.Regex(key).IsMatch(path)))
+          {
+            path = key;
+            break;
+          }
+        }
+        return _hosts.TryGetValue(path, out host);
+      }
     }
 
     internal void Start ()

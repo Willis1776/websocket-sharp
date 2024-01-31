@@ -322,6 +322,11 @@ namespace WebSocketSharp
     #region Public Properties
 
     /// <summary>
+    /// Gets or sets the custom headers
+    /// </summary>
+    public IEnumerable<KeyValuePair<string, string>> CustomHeaders { get; set; }
+
+    /// <summary>
     /// Gets or sets the compression method used to compress a message.
     /// </summary>
     /// <remarks>
@@ -795,6 +800,13 @@ namespace WebSocketSharp
       var data = new PayloadData (code, reason);
 
       close (data, false, false);
+    }
+
+    private void abort(ushort code, string reason, int httpStatusCode, string httpResponseBody)
+    {
+      var data = new PayloadData(code, reason, httpStatusCode, httpResponseBody);
+
+      close(data, false, false);
     }
 
     // As server
@@ -1501,13 +1513,13 @@ namespace WebSocketSharp
 
       var res = sendHandshakeRequest ();
 
-      string msg;
 
-      if (!checkHandshakeResponse (res, out msg)) {
-        _log.Error (msg);
-        _log.Debug (res.ToString ());
+      if (!checkHandshakeResponse(res, out var msg))
+      {
+        _log.Error(msg);
+        _log.Debug(res.ToString());
 
-        abort (1002, "A handshake error has occurred.");
+        abort(1002, "A handshake error has occurred.", res.StatusCode, res.MessageBody);
 
         return false;
       }
@@ -2144,6 +2156,21 @@ namespace WebSocketSharp
     private HttpResponse sendHandshakeRequest ()
     {
       var req = createHandshakeRequest ();
+
+      if (CustomHeaders != null)
+      {
+        foreach (var header in CustomHeaders)
+        {
+          if (header.Key == "Sec-WebSocket-Key")
+          {
+            _log.Error("Sec-WebSocket-Key is automatically generated and your override will not work.");
+          }
+          else
+          {
+            req.Headers.Set(header.Key, header.Value);
+          }
+        }
+      }
 
       var timeout = 90000;
       var res = req.GetResponse (_stream, timeout);

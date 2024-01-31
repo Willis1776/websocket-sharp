@@ -98,11 +98,11 @@ namespace WebSocketSharp.Server
     /// The new instance listens for incoming handshake requests on
     /// <see cref="System.Net.IPAddress.Any"/> and port 80.
     /// </remarks>
-    public WebSocketServer ()
+    public WebSocketServer (bool wildcardServicesPath = false)
     {
       var addr = System.Net.IPAddress.Any;
 
-      init (addr.ToString (), addr, 80, false);
+      init (addr.ToString (), addr, 80, false, wildcardServicesPath);
     }
 
     /// <summary>
@@ -152,6 +152,9 @@ namespace WebSocketSharp.Server
     /// <param name="url">
     /// A <see cref="string"/> that specifies the WebSocket URL of the server.
     /// </param>
+    /// <param name="wildcardServicesPath">
+    /// A <see cref="bool"/> that specifies whether the path is a service path.
+    /// </param>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="url"/> is <see langword="null"/>.
     /// </exception>
@@ -166,7 +169,7 @@ namespace WebSocketSharp.Server
     ///   <paramref name="url"/> is invalid.
     ///   </para>
     /// </exception>
-    public WebSocketServer (string url)
+    public WebSocketServer (string url, bool wildcardServicesPath = false)
     {
       if (url == null)
         throw new ArgumentNullException ("url");
@@ -195,7 +198,7 @@ namespace WebSocketSharp.Server
         throw new ArgumentException (msg, "url");
       }
 
-      init (host, addr, uri.Port, uri.Scheme == "wss");
+      init (host, addr, uri.Port, uri.Scheme == "wss", wildcardServicesPath);
     }
 
     /// <summary>
@@ -214,10 +217,13 @@ namespace WebSocketSharp.Server
     /// A <see cref="bool"/>: <c>true</c> if the new instance provides
     /// secure connections; otherwise, <c>false</c>.
     /// </param>
+    /// <param name="wildcardServicesPath">
+    /// A <see cref="bool"/> that specifies whether the path is a service path.
+    /// </param>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="port"/> is less than 1 or greater than 65535.
     /// </exception>
-    public WebSocketServer (int port, bool secure)
+    public WebSocketServer (int port, bool secure, bool wildcardServicesPath = false)
     {
       if (!port.IsPortNumber ()) {
         var msg = "Less than 1 or greater than 65535.";
@@ -227,7 +233,7 @@ namespace WebSocketSharp.Server
 
       var addr = System.Net.IPAddress.Any;
 
-      init (addr.ToString (), addr, port, secure);
+      init (addr.ToString (), addr, port, secure, wildcardServicesPath);
     }
 
     /// <summary>
@@ -285,6 +291,9 @@ namespace WebSocketSharp.Server
     /// A <see cref="bool"/>: <c>true</c> if the new instance provides
     /// secure connections; otherwise, <c>false</c>.
     /// </param>
+    /// <param name="wildcardServicesPath">
+    /// A <see cref="bool"/> that specifies whether the path is a service path.
+    /// </param>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="address"/> is <see langword="null"/>.
     /// </exception>
@@ -294,7 +303,7 @@ namespace WebSocketSharp.Server
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="port"/> is less than 1 or greater than 65535.
     /// </exception>
-    public WebSocketServer (System.Net.IPAddress address, int port, bool secure)
+    public WebSocketServer (System.Net.IPAddress address, int port, bool secure, bool wildcardServicesPath = false)
     {
       if (address == null)
         throw new ArgumentNullException ("address");
@@ -311,7 +320,7 @@ namespace WebSocketSharp.Server
         throw new ArgumentOutOfRangeException ("port", msg);
       }
 
-      init (address.ToString (), address, port, secure);
+      init (address.ToString (), address, port, secure, wildcardServicesPath);
     }
 
     #endregion
@@ -721,7 +730,7 @@ namespace WebSocketSharp.Server
     }
 
     private void init (
-      string hostname, System.Net.IPAddress address, int port, bool secure
+      string hostname, System.Net.IPAddress address, int port, bool secure, bool wildcardServicesPath
     )
     {
       _hostname = hostname;
@@ -733,7 +742,7 @@ namespace WebSocketSharp.Server
       _dnsStyle = Uri.CheckHostName (hostname) == UriHostNameType.Dns;
       _listener = new TcpListener (address, port);
       _log = new Logger ();
-      _services = new WebSocketServiceManager (_log);
+      _services = new WebSocketServiceManager (_log, wildcardServicesPath);
       _sync = new object ();
     }
 

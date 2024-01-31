@@ -830,7 +830,7 @@ namespace WebSocketSharp.Server
     }
 
     private void init (
-      string hostname, System.Net.IPAddress address, int port, bool secure
+      string hostname, System.Net.IPAddress address, int port, bool secure, bool wildcardServicesPath = false
     )
     {
       _hostname = hostname;
@@ -841,7 +841,7 @@ namespace WebSocketSharp.Server
       _docRootPath = "./Public";
       _listener = createListener (_hostname, _port, _secure);
       _log = _listener.Log;
-      _services = new WebSocketServiceManager (_log);
+      _services = new WebSocketServiceManager (_log, wildcardServicesPath);
       _sync = new object ();
     }
 
