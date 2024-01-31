@@ -82,7 +82,7 @@ namespace WebSocketSharp.Server
     /// Gets the number of the WebSocket services.
     /// </summary>
     /// <value>
-    /// An <see cref="int"/> that represents the number of the services.
+    /// A <see cref="int"/> that represents the number of the services.
     /// </value>
     public int Count {
       get {
@@ -157,26 +157,24 @@ namespace WebSocketSharp.Server
     public WebSocketServiceHost this[string path] {
       get {
         if (path == null)
-          throw new ArgumentNullException ("path");
+          throw new ArgumentNullException (nameof(path));
 
         if (path.Length == 0)
-          throw new ArgumentException ("An empty string.", "path");
+          throw new ArgumentException ("An empty string.", nameof(path));
 
         if (path[0] != '/') {
           var msg = "Not an absolute path.";
 
-          throw new ArgumentException (msg, "path");
+          throw new ArgumentException (msg, nameof(path));
         }
 
         if (path.IndexOfAny (new[] { '?', '#' }) > -1) {
           var msg = "It includes either or both query and fragment components.";
 
-          throw new ArgumentException (msg, "path");
+          throw new ArgumentException (msg, nameof(path));
         }
 
-        WebSocketServiceHost host;
-
-        InternalTryGetServiceHost (path, out host);
+        InternalTryGetServiceHost (path, out var host);
 
         return host;
       }
@@ -200,9 +198,7 @@ namespace WebSocketSharp.Server
     ///   </para>
     /// </value>
     public bool KeepClean {
-      get {
-        return _keepClean;
-      }
+      get => _keepClean;
 
       set {
         lock (_sync) {
@@ -257,15 +253,13 @@ namespace WebSocketSharp.Server
     /// The value specified for a set operation is zero or less.
     /// </exception>
     public TimeSpan WaitTime {
-      get {
-        return _waitTime;
-      }
+      get => _waitTime;
 
       set {
         if (value <= TimeSpan.Zero) {
           var msg = "Zero or less.";
 
-          throw new ArgumentOutOfRangeException ("value", msg);
+          throw new ArgumentOutOfRangeException (nameof(value), msg);
         }
 
         lock (_sync) {
@@ -357,7 +351,7 @@ namespace WebSocketSharp.Server
     /// </param>
     /// <param name="initializer">
     ///   <para>
-    ///   An <see cref="T:System.Action{TBehavior}"/> delegate.
+    ///   A <see cref="T:System.Action{TBehavior}"/> delegate.
     ///   </para>
     ///   <para>
     ///   The delegate invokes the method called when the service
@@ -375,7 +369,7 @@ namespace WebSocketSharp.Server
     ///   It must inherit the <see cref="WebSocketBehavior"/> class.
     ///   </para>
     ///   <para>
-    ///   Also it must have a public parameterless constructor.
+    ///   Also, it must have a public parameterless constructor.
     ///   </para>
     /// </typeparam>
     /// <exception cref="ArgumentNullException">
@@ -411,32 +405,30 @@ namespace WebSocketSharp.Server
       where TBehavior : WebSocketBehavior, new ()
     {
       if (path == null)
-        throw new ArgumentNullException ("path");
+        throw new ArgumentNullException (nameof(path));
 
       if (path.Length == 0)
-        throw new ArgumentException ("An empty string.", "path");
+        throw new ArgumentException ("An empty string.", nameof(path));
 
       if (path[0] != '/') {
         var msg = "Not an absolute path.";
 
-        throw new ArgumentException (msg, "path");
+        throw new ArgumentException (msg, nameof(path));
       }
 
       if (path.IndexOfAny (new[] { '?', '#' }) > -1) {
         var msg = "It includes either or both query and fragment components.";
 
-        throw new ArgumentException (msg, "path");
+        throw new ArgumentException (msg, nameof(path));
       }
 
       path = path.TrimSlashFromEnd ();
 
       lock (_sync) {
-        WebSocketServiceHost host;
-
-        if (_hosts.TryGetValue (path, out host)) {
+        if (_hosts.TryGetValue (path, out var host)) {
           var msg = "It is already in use.";
 
-          throw new ArgumentException (msg, "path");
+          throw new ArgumentException (msg, nameof(path));
         }
 
         host = new WebSocketServiceHost<TBehavior> (path, initializer, _log);
@@ -463,7 +455,7 @@ namespace WebSocketSharp.Server
     /// </remarks>
     public void Clear ()
     {
-      List<WebSocketServiceHost> hosts = null;
+      List<WebSocketServiceHost> hosts;
 
       lock (_sync) {
         hosts = _hosts.Values.ToList ();
@@ -471,9 +463,9 @@ namespace WebSocketSharp.Server
         _hosts.Clear ();
       }
 
-      foreach (var host in hosts) {
-        if (host.State == ServerState.Start)
-          host.Stop (1001, String.Empty);
+      foreach (var host in hosts.Where(host => host.State == ServerState.Start))
+      {
+        host.Stop (1001, string.Empty);
       }
     }
 
@@ -521,21 +513,21 @@ namespace WebSocketSharp.Server
     public bool RemoveService (string path)
     {
       if (path == null)
-        throw new ArgumentNullException ("path");
+        throw new ArgumentNullException (nameof(path));
 
       if (path.Length == 0)
-        throw new ArgumentException ("An empty string.", "path");
+        throw new ArgumentException ("An empty string.", nameof(path));
 
       if (path[0] != '/') {
         var msg = "Not an absolute path.";
 
-        throw new ArgumentException (msg, "path");
+        throw new ArgumentException (msg, nameof(path));
       }
 
       if (path.IndexOfAny (new[] { '?', '#' }) > -1) {
         var msg = "It includes either or both query and fragment components.";
 
-        throw new ArgumentException (msg, "path");
+        throw new ArgumentException (msg, nameof(path));
       }
 
       path = path.TrimSlashFromEnd ();
@@ -549,7 +541,7 @@ namespace WebSocketSharp.Server
       }
 
       if (host.State == ServerState.Start)
-        host.Stop (1001, String.Empty);
+        host.Stop (1001, string.Empty);
 
       return true;
     }
@@ -605,21 +597,21 @@ namespace WebSocketSharp.Server
     public bool TryGetServiceHost (string path, out WebSocketServiceHost host)
     {
       if (path == null)
-        throw new ArgumentNullException ("path");
+        throw new ArgumentNullException (nameof(path));
 
       if (path.Length == 0)
-        throw new ArgumentException ("An empty string.", "path");
+        throw new ArgumentException ("An empty string.", nameof(path));
 
       if (path[0] != '/') {
         var msg = "Not an absolute path.";
 
-        throw new ArgumentException (msg, "path");
+        throw new ArgumentException (msg, nameof(path));
       }
 
       if (path.IndexOfAny (new[] { '?', '#' }) > -1) {
         var msg = "It includes either or both query and fragment components.";
 
-        throw new ArgumentException (msg, "path");
+        throw new ArgumentException (msg, nameof(path));
       }
 
       return InternalTryGetServiceHost (path, out host);

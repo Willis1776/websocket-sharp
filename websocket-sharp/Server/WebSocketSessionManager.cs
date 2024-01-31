@@ -561,9 +561,7 @@ namespace WebSocketSharp.Server
       if (data == null)
         throw new ArgumentNullException ("data");
 
-      byte[] bytes;
-
-      if (!data.TryGetUTF8EncodedBytes (out bytes)) {
+      if (!data.TryGetUTF8EncodedBytes (out var bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
         throw new ArgumentException (msg, "data");
@@ -743,9 +741,7 @@ namespace WebSocketSharp.Server
       if (data == null)
         throw new ArgumentNullException ("data");
 
-      byte[] bytes;
-
-      if (!data.TryGetUTF8EncodedBytes (out bytes)) {
+      if (!data.TryGetUTF8EncodedBytes (out var bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
         throw new ArgumentException (msg, "data");
