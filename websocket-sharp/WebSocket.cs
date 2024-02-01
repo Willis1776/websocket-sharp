@@ -42,8 +42,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -78,7 +76,6 @@ namespace WebSocketSharp
     private Action                         _closeContext;
     private CompressionMethod              _compression;
     private WebSocketContext               _context;
-    private CookieCollection               _cookies;
     private NetworkCredential              _credentials;
     private bool                           _emitOnPing;
     private bool                           _enableRedirection;
@@ -91,7 +88,7 @@ namespace WebSocketSharp
     private MemoryStream                   _fragmentsBuffer;
     private bool                           _fragmentsCompressed;
     private Opcode                         _fragmentsOpcode;
-    private const string                   _guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    private const string                   Guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     private Func<WebSocketContext, string> _handshakeRequestChecker;
     private bool                           _ignoreExtensions;
     private bool                           _inContinuation;
@@ -117,7 +114,7 @@ namespace WebSocketSharp
     private Stream                         _stream;
     private TcpClient                      _tcpClient;
     private Uri                            _uri;
-    private const string                   _version = "13";
+    private const string                   Version = "13";
     private TimeSpan                       _waitTime;
 
     #endregion
@@ -204,7 +201,7 @@ namespace WebSocketSharp
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebSocket"/> class with
-    /// the specified URL and optionally subprotocols.
+    /// the specified URL and optionally sub protocols.
     /// </summary>
     /// <param name="url">
     ///   <para>
@@ -220,7 +217,7 @@ namespace WebSocketSharp
     /// <param name="protocols">
     ///   <para>
     ///   An array of <see cref="string"/> that specifies the names of
-    ///   the subprotocols if necessary.
+    ///   the sub protocols if necessary.
     ///   </para>
     ///   <para>
     ///   Each value of the array must be a token defined in
@@ -257,19 +254,17 @@ namespace WebSocketSharp
     public WebSocket (string url, params string[] protocols)
     {
       if (url == null)
-        throw new ArgumentNullException ("url");
+        throw new ArgumentNullException (nameof(url));
 
       if (url.Length == 0)
-        throw new ArgumentException ("An empty string.", "url");
+        throw new ArgumentException ("An empty string.", nameof(url));
 
-      string msg;
-
-      if (!url.TryCreateWebSocketUri (out _uri, out msg))
-        throw new ArgumentException (msg, "url");
+      if (!url.TryCreateWebSocketUri (out _uri, out var msg))
+        throw new ArgumentException (msg, nameof(url));
 
       if (protocols != null && protocols.Length > 0) {
         if (!checkProtocols (protocols, out msg))
-          throw new ArgumentException (msg, "protocols");
+          throw new ArgumentException (msg, nameof(protocols));
 
         _protocols = protocols;
       }
@@ -289,32 +284,20 @@ namespace WebSocketSharp
 
     #region Internal Properties
 
-    internal CookieCollection CookieCollection {
-      get {
-        return _cookies;
-      }
-    }
+    internal CookieCollection CookieCollection { get; private set; }
 
     // As server
     internal Func<WebSocketContext, string> CustomHandshakeRequestChecker {
-      get {
-        return _handshakeRequestChecker;
-      }
+      get => _handshakeRequestChecker;
 
-      set {
-        _handshakeRequestChecker = value;
-      }
+      set => _handshakeRequestChecker = value;
     }
 
     // As server
     internal bool IgnoreExtensions {
-      get {
-        return _ignoreExtensions;
-      }
+      get => _ignoreExtensions;
 
-      set {
-        _ignoreExtensions = value;
-      }
+      set => _ignoreExtensions = value;
     }
 
     #endregion
@@ -349,13 +332,12 @@ namespace WebSocketSharp
     /// the client.
     /// </exception>
     public CompressionMethod Compression {
-      get {
-        return _compression;
-      }
+      get => _compression;
 
       set {
-        if (!_client) {
-          var msg = "The interface is not for the client.";
+        if (!_client)
+        {
+          const string msg = "The interface is not for the client.";
 
           throw new InvalidOperationException (msg);
         }
@@ -374,7 +356,7 @@ namespace WebSocketSharp
     /// </summary>
     /// <value>
     ///   <para>
-    ///   An <see cref="T:System.Collections.Generic.IEnumerable{WebSocketSharp.Net.Cookie}"/>
+    ///   A <see cref="T:System.Collections.Generic.IEnumerable{WebSocketSharp.Net.Cookie}"/>
     ///   instance.
     ///   </para>
     ///   <para>
@@ -384,8 +366,8 @@ namespace WebSocketSharp
     /// </value>
     public IEnumerable<Cookie> Cookies {
       get {
-        lock (_cookies.SyncRoot) {
-          foreach (var cookie in _cookies)
+        lock (CookieCollection.SyncRoot) {
+          foreach (var cookie in CookieCollection)
             yield return cookie;
         }
       }
@@ -403,11 +385,7 @@ namespace WebSocketSharp
     ///   The default value is <see langword="null"/>.
     ///   </para>
     /// </value>
-    public NetworkCredential Credentials {
-      get {
-        return _credentials;
-      }
-    }
+    public NetworkCredential Credentials => _credentials;
 
     /// <summary>
     /// Gets or sets a value indicating whether the message event is
@@ -423,13 +401,9 @@ namespace WebSocketSharp
     ///   </para>
     /// </value>
     public bool EmitOnPing {
-      get {
-        return _emitOnPing;
-      }
+      get => _emitOnPing;
 
-      set {
-        _emitOnPing = value;
-      }
+      set => _emitOnPing = value;
     }
 
     /// <summary>
@@ -454,9 +428,7 @@ namespace WebSocketSharp
     /// the client.
     /// </exception>
     public bool EnableRedirection {
-      get {
-        return _enableRedirection;
-      }
+      get => _enableRedirection;
 
       set {
         if (!_client) {
@@ -486,11 +458,7 @@ namespace WebSocketSharp
     ///   An empty string if not specified or selected.
     ///   </para>
     /// </value>
-    public string Extensions {
-      get {
-        return _extensions ?? String.Empty;
-      }
-    }
+    public string Extensions => _extensions ?? String.Empty;
 
     /// <summary>
     /// Gets a value indicating whether the communication is possible.
@@ -498,11 +466,7 @@ namespace WebSocketSharp
     /// <value>
     /// <c>true</c> if the communication is possible; otherwise, <c>false</c>.
     /// </value>
-    public bool IsAlive {
-      get {
-        return ping (EmptyBytes);
-      }
-    }
+    public bool IsAlive => ping (EmptyBytes);
 
     /// <summary>
     /// Gets a value indicating whether the connection is secure.
@@ -510,11 +474,7 @@ namespace WebSocketSharp
     /// <value>
     /// <c>true</c> if the connection is secure; otherwise, <c>false</c>.
     /// </value>
-    public bool IsSecure {
-      get {
-        return _secure;
-      }
-    }
+    public bool IsSecure => _secure;
 
     /// <summary>
     /// Gets the logging function.
@@ -526,13 +486,9 @@ namespace WebSocketSharp
     /// A <see cref="Logger"/> that provides the logging function.
     /// </value>
     public Logger Log {
-      get {
-        return _log;
-      }
+      get => _log;
 
-      internal set {
-        _log = value;
-      }
+      internal set => _log = value;
     }
 
     /// <summary>
@@ -581,9 +537,7 @@ namespace WebSocketSharp
     ///   </para>
     /// </exception>
     public string Origin {
-      get {
-        return _origin;
-      }
+      get => _origin;
 
       set {
         if (!_client) {
@@ -598,13 +552,13 @@ namespace WebSocketSharp
           if (!Uri.TryCreate (value, UriKind.Absolute, out uri)) {
             var msg = "Not an absolute URI string.";
 
-            throw new ArgumentException (msg, "value");
+            throw new ArgumentException (msg, nameof(value));
           }
 
           if (uri.Segments.Length > 1) {
             var msg = "It includes the path segments.";
 
-            throw new ArgumentException (msg, "value");
+            throw new ArgumentException (msg, nameof(value));
           }
         }
 
@@ -630,13 +584,9 @@ namespace WebSocketSharp
     ///   </para>
     /// </value>
     public string Protocol {
-      get {
-        return _protocol ?? String.Empty;
-      }
+      get => _protocol ?? String.Empty;
 
-      internal set {
-        _protocol = value;
-      }
+      internal set => _protocol = value;
     }
 
     /// <summary>
@@ -653,11 +603,7 @@ namespace WebSocketSharp
     ///   The default value is <see cref="WebSocketState.New"/>.
     ///   </para>
     /// </value>
-    public WebSocketState ReadyState {
-      get {
-        return _readyState;
-      }
-    }
+    public WebSocketState ReadyState => _readyState;
 
     /// <summary>
     /// Gets the configuration for secure connection.
@@ -711,11 +657,7 @@ namespace WebSocketSharp
     ///   is for the server.
     ///   </para>
     /// </value>
-    public Uri Url {
-      get {
-        return _client ? _uri : _context.RequestUri;
-      }
-    }
+    public Uri Url => _client ? _uri : _context.RequestUri;
 
     /// <summary>
     /// Gets or sets the time to wait for the response to the ping or close.
@@ -738,15 +680,13 @@ namespace WebSocketSharp
     /// The value specified for a set operation is zero or less.
     /// </exception>
     public TimeSpan WaitTime {
-      get {
-        return _waitTime;
-      }
+      get => _waitTime;
 
       set {
         if (value <= TimeSpan.Zero) {
           var msg = "Zero or less.";
 
-          throw new ArgumentOutOfRangeException ("value", msg);
+          throw new ArgumentOutOfRangeException (nameof(value), msg);
         }
 
         lock (_forState) {
@@ -946,7 +886,7 @@ namespace WebSocketSharp
         return false;
       }
 
-      if (ver != _version) {
+      if (ver != Version) {
         message = "The Sec-WebSocket-Version header is invalid.";
 
         return false;
@@ -1021,7 +961,7 @@ namespace WebSocketSharp
       var ver = headers["Sec-WebSocket-Version"];
 
       if (ver != null) {
-        if (ver != _version) {
+        if (ver != Version) {
           message = "The Sec-WebSocket-Version header is invalid.";
 
           return false;
@@ -1300,12 +1240,7 @@ namespace WebSocketSharp
 
       var ret = sent && received;
 
-      var msg = String.Format (
-                  "The closing was clean? {0} (sent: {1} received: {2})",
-                  ret,
-                  sent,
-                  received
-                );
+      var msg = $"The closing was clean? {ret} (sent: {sent} received: {received})";
 
       _log.Debug (msg);
 
@@ -1418,7 +1353,7 @@ namespace WebSocketSharp
     {
       var ret = HttpResponse.CreateCloseResponse (HttpStatusCode.BadRequest);
 
-      ret.Headers["Sec-WebSocket-Version"] = _version;
+      ret.Headers["Sec-WebSocket-Version"] = Version;
 
       return ret;
     }
@@ -1431,7 +1366,7 @@ namespace WebSocketSharp
       var headers = ret.Headers;
 
       headers["Sec-WebSocket-Key"] = _base64Key;
-      headers["Sec-WebSocket-Version"] = _version;
+      headers["Sec-WebSocket-Version"] = Version;
 
       if (!_origin.IsNullOrEmpty ())
         headers["Origin"] = _origin;
@@ -1455,8 +1390,8 @@ namespace WebSocketSharp
       if (ares != null)
         headers["Authorization"] = ares.ToString ();
 
-      if (_cookies.Count > 0)
-        ret.SetCookies (_cookies);
+      if (CookieCollection.Count > 0)
+        ret.SetCookies (CookieCollection);
 
       return ret;
     }
@@ -1476,8 +1411,8 @@ namespace WebSocketSharp
       if (_extensions != null)
         headers["Sec-WebSocket-Extensions"] = _extensions;
 
-      if (_cookies.Count > 0)
-        ret.SetCookies (_cookies);
+      if (CookieCollection.Count > 0)
+        ret.SetCookies (CookieCollection);
 
       return ret;
     }
@@ -1539,7 +1474,7 @@ namespace WebSocketSharp
       var cookies = res.Cookies;
 
       if (cookies.Count > 0)
-        _cookies.SetOrRemove (cookies);
+        CookieCollection.SetOrRemove (cookies);
 
       return true;
     }
@@ -1565,16 +1500,13 @@ namespace WebSocketSharp
 
     private ClientSslConfiguration getSslConfiguration ()
     {
-      if (_sslConfig == null)
-        _sslConfig = new ClientSslConfiguration (_uri.DnsSafeHost);
-
-      return _sslConfig;
+      return _sslConfig ?? (_sslConfig = new ClientSslConfiguration(_uri.DnsSafeHost));
     }
 
     private void init ()
     {
       _compression = CompressionMethod.None;
-      _cookies = new CookieCollection ();
+      CookieCollection = new CookieCollection ();
       _forPing = new object ();
       _forSend = new object ();
       _forState = new object ();
@@ -2358,41 +2290,34 @@ namespace WebSocketSharp
       _pongReceived = new ManualResetEvent (false);
       _receivingExited = new ManualResetEvent (false);
 
-      Action receive = null;
-      receive =
-        () =>
-          WebSocketFrame.ReadFrameAsync (
-            _stream,
-            false,
-            frame => {
-              var cont = processReceivedFrame (frame)
-                         && _readyState != WebSocketState.Closed;
+      void Receive() =>
+        WebSocketFrame.ReadFrameAsync(_stream, false, frame =>
+        {
+          var cont = processReceivedFrame(frame) && _readyState != WebSocketState.Closed;
 
-              if (!cont) {
-                var exited = _receivingExited;
+          if (!cont)
+          {
+            var exited = _receivingExited;
 
-                if (exited != null)
-                  exited.Set ();
+            exited?.Set();
 
-                return;
-              }
+            return;
+          }
 
-              receive ();
+          Receive();
 
-              if (_inMessage)
-                return;
+          if (_inMessage) return;
 
-              message ();
-            },
-            ex => {
-              _log.Fatal (ex.Message);
-              _log.Debug (ex.ToString ());
+          message();
+        }, ex =>
+        {
+          _log.Fatal(ex.Message);
+          _log.Debug(ex.ToString());
 
-              abort ("An exception has occurred while receiving.", ex);
-            }
-          );
+          abort("An exception has occurred while receiving.", ex);
+        });
 
-      receive ();
+      Receive ();
     }
 
     // As client
@@ -2500,18 +2425,11 @@ namespace WebSocketSharp
       _log.Trace ("Begin closing the connection.");
 
       var sent = rawFrame != null && sendBytes (rawFrame);
-      var received = sent && _receivingExited != null
-                     ? _receivingExited.WaitOne (_waitTime)
-                     : false;
+      var received = sent && _receivingExited != null && _receivingExited.WaitOne (_waitTime);
 
       var res = sent && received;
 
-      var msg = String.Format (
-                  "The closing was clean? {0} (sent: {1} received: {2})",
-                  res,
-                  sent,
-                  received
-                );
+      var msg = $"The closing was clean? {res} (sent: {sent} received: {received})";
 
       _log.Debug (msg);
 
@@ -2547,7 +2465,7 @@ namespace WebSocketSharp
     {
       SHA1 sha1 = new SHA1CryptoServiceProvider ();
 
-      var src = base64Key + _guid;
+      var src = base64Key + Guid;
       var bytes = src.GetUTF8EncodedBytes ();
       var key = sha1.ComputeHash (bytes);
 
@@ -2786,19 +2704,19 @@ namespace WebSocketSharp
       if (!code.IsCloseStatusCode ()) {
         var msg = "Less than 1000 or greater than 4999.";
 
-        throw new ArgumentOutOfRangeException ("code", msg);
+        throw new ArgumentOutOfRangeException (nameof(code), msg);
       }
 
       if (_client && code == 1011) {
         var msg = "1011 cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (!_client && code == 1010) {
         var msg = "1010 cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (reason.IsNullOrEmpty ()) {
@@ -2810,7 +2728,7 @@ namespace WebSocketSharp
       if (code == 1005) {
         var msg = "1005 cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       byte[] bytes;
@@ -2818,13 +2736,13 @@ namespace WebSocketSharp
       if (!reason.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "reason");
+        throw new ArgumentException (msg, nameof(reason));
       }
 
       if (bytes.Length > 123) {
         var msg = "Its size is greater than 123 bytes.";
 
-        throw new ArgumentOutOfRangeException ("reason", msg);
+        throw new ArgumentOutOfRangeException (nameof(reason), msg);
       }
 
       close (code, reason);
@@ -2887,13 +2805,13 @@ namespace WebSocketSharp
       if (_client && code == CloseStatusCode.ServerError) {
         var msg = "ServerError cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (!_client && code == CloseStatusCode.MandatoryExtension) {
         var msg = "MandatoryExtension cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (reason.IsNullOrEmpty ()) {
@@ -2905,7 +2823,7 @@ namespace WebSocketSharp
       if (code == CloseStatusCode.NoStatus) {
         var msg = "NoStatus cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       byte[] bytes;
@@ -2913,13 +2831,13 @@ namespace WebSocketSharp
       if (!reason.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "reason");
+        throw new ArgumentException (msg, nameof(reason));
       }
 
       if (bytes.Length > 123) {
         var msg = "Its size is greater than 123 bytes.";
 
-        throw new ArgumentOutOfRangeException ("reason", msg);
+        throw new ArgumentOutOfRangeException (nameof(reason), msg);
       }
 
       close ((ushort) code, reason);
@@ -3097,19 +3015,19 @@ namespace WebSocketSharp
       if (!code.IsCloseStatusCode ()) {
         var msg = "Less than 1000 or greater than 4999.";
 
-        throw new ArgumentOutOfRangeException ("code", msg);
+        throw new ArgumentOutOfRangeException (nameof(code), msg);
       }
 
       if (_client && code == 1011) {
         var msg = "1011 cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (!_client && code == 1010) {
         var msg = "1010 cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (reason.IsNullOrEmpty ()) {
@@ -3121,7 +3039,7 @@ namespace WebSocketSharp
       if (code == 1005) {
         var msg = "1005 cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       byte[] bytes;
@@ -3129,13 +3047,13 @@ namespace WebSocketSharp
       if (!reason.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "reason");
+        throw new ArgumentException (msg, nameof(reason));
       }
 
       if (bytes.Length > 123) {
         var msg = "Its size is greater than 123 bytes.";
 
-        throw new ArgumentOutOfRangeException ("reason", msg);
+        throw new ArgumentOutOfRangeException (nameof(reason), msg);
       }
 
       closeAsync (code, reason);
@@ -3203,13 +3121,13 @@ namespace WebSocketSharp
       if (_client && code == CloseStatusCode.ServerError) {
         var msg = "ServerError cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (!_client && code == CloseStatusCode.MandatoryExtension) {
         var msg = "MandatoryExtension cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       if (reason.IsNullOrEmpty ()) {
@@ -3221,7 +3139,7 @@ namespace WebSocketSharp
       if (code == CloseStatusCode.NoStatus) {
         var msg = "NoStatus cannot be used.";
 
-        throw new ArgumentException (msg, "code");
+        throw new ArgumentException (msg, nameof(code));
       }
 
       byte[] bytes;
@@ -3229,13 +3147,13 @@ namespace WebSocketSharp
       if (!reason.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "reason");
+        throw new ArgumentException (msg, nameof(reason));
       }
 
       if (bytes.Length > 123) {
         var msg = "Its size is greater than 123 bytes.";
 
-        throw new ArgumentOutOfRangeException ("reason", msg);
+        throw new ArgumentOutOfRangeException (nameof(reason), msg);
       }
 
       closeAsync ((ushort) code, reason);
@@ -3376,13 +3294,13 @@ namespace WebSocketSharp
       if (!message.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "message");
+        throw new ArgumentException (msg, nameof(message));
       }
 
       if (bytes.Length > 125) {
         var msg = "Its size is greater than 125 bytes.";
 
-        throw new ArgumentOutOfRangeException ("message", msg);
+        throw new ArgumentOutOfRangeException (nameof(message), msg);
       }
 
       return ping (bytes);
@@ -3409,7 +3327,7 @@ namespace WebSocketSharp
       }
 
       if (data == null)
-        throw new ArgumentNullException ("data");
+        throw new ArgumentNullException (nameof(data));
 
       send (Opcode.Binary, new MemoryStream (data));
     }
@@ -3451,12 +3369,12 @@ namespace WebSocketSharp
       }
 
       if (fileInfo == null)
-        throw new ArgumentNullException ("fileInfo");
+        throw new ArgumentNullException (nameof(fileInfo));
 
       if (!fileInfo.Exists) {
         var msg = "The file does not exist.";
 
-        throw new ArgumentException (msg, "fileInfo");
+        throw new ArgumentException (msg, nameof(fileInfo));
       }
 
       FileStream stream;
@@ -3464,7 +3382,7 @@ namespace WebSocketSharp
       if (!fileInfo.TryOpenRead (out stream)) {
         var msg = "The file could not be opened.";
 
-        throw new ArgumentException (msg, "fileInfo");
+        throw new ArgumentException (msg, nameof(fileInfo));
       }
 
       send (Opcode.Binary, stream);
@@ -3494,14 +3412,14 @@ namespace WebSocketSharp
       }
 
       if (data == null)
-        throw new ArgumentNullException ("data");
+        throw new ArgumentNullException (nameof(data));
 
       byte[] bytes;
 
       if (!data.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "data");
+        throw new ArgumentException (msg, nameof(data));
       }
 
       send (Opcode.Text, new MemoryStream (bytes));
@@ -3553,18 +3471,18 @@ namespace WebSocketSharp
       }
 
       if (stream == null)
-        throw new ArgumentNullException ("stream");
+        throw new ArgumentNullException (nameof(stream));
 
       if (!stream.CanRead) {
         var msg = "It cannot be read.";
 
-        throw new ArgumentException (msg, "stream");
+        throw new ArgumentException (msg, nameof(stream));
       }
 
       if (length < 1) {
         var msg = "Less than 1.";
 
-        throw new ArgumentException (msg, "length");
+        throw new ArgumentException (msg, nameof(length));
       }
 
       var bytes = stream.ReadBytes (length);
@@ -3573,7 +3491,7 @@ namespace WebSocketSharp
       if (len == 0) {
         var msg = "No data could be read from it.";
 
-        throw new ArgumentException (msg, "stream");
+        throw new ArgumentException (msg, nameof(stream));
       }
 
       if (len < length) {
@@ -3625,7 +3543,7 @@ namespace WebSocketSharp
       }
 
       if (data == null)
-        throw new ArgumentNullException ("data");
+        throw new ArgumentNullException (nameof(data));
 
       sendAsync (Opcode.Binary, new MemoryStream (data), completed);
     }
@@ -3685,12 +3603,12 @@ namespace WebSocketSharp
       }
 
       if (fileInfo == null)
-        throw new ArgumentNullException ("fileInfo");
+        throw new ArgumentNullException (nameof(fileInfo));
 
       if (!fileInfo.Exists) {
         var msg = "The file does not exist.";
 
-        throw new ArgumentException (msg, "fileInfo");
+        throw new ArgumentException (msg, nameof(fileInfo));
       }
 
       FileStream stream;
@@ -3698,7 +3616,7 @@ namespace WebSocketSharp
       if (!fileInfo.TryOpenRead (out stream)) {
         var msg = "The file could not be opened.";
 
-        throw new ArgumentException (msg, "fileInfo");
+        throw new ArgumentException (msg, nameof(fileInfo));
       }
 
       sendAsync (Opcode.Binary, stream, completed);
@@ -3746,14 +3664,14 @@ namespace WebSocketSharp
       }
 
       if (data == null)
-        throw new ArgumentNullException ("data");
+        throw new ArgumentNullException (nameof(data));
 
       byte[] bytes;
 
       if (!data.TryGetUTF8EncodedBytes (out bytes)) {
         var msg = "It could not be UTF-8-encoded.";
 
-        throw new ArgumentException (msg, "data");
+        throw new ArgumentException (msg, nameof(data));
       }
 
       sendAsync (Opcode.Text, new MemoryStream (bytes), completed);
@@ -3824,18 +3742,18 @@ namespace WebSocketSharp
       }
 
       if (stream == null)
-        throw new ArgumentNullException ("stream");
+        throw new ArgumentNullException (nameof(stream));
 
       if (!stream.CanRead) {
         var msg = "It cannot be read.";
 
-        throw new ArgumentException (msg, "stream");
+        throw new ArgumentException (msg, nameof(stream));
       }
 
       if (length < 1) {
         var msg = "Less than 1.";
 
-        throw new ArgumentException (msg, "length");
+        throw new ArgumentException (msg, nameof(length));
       }
 
       var bytes = stream.ReadBytes (length);
@@ -3844,7 +3762,7 @@ namespace WebSocketSharp
       if (len == 0) {
         var msg = "No data could be read from it.";
 
-        throw new ArgumentException (msg, "stream");
+        throw new ArgumentException (msg, nameof(stream));
       }
 
       if (len < length) {
@@ -3882,14 +3800,14 @@ namespace WebSocketSharp
       }
 
       if (cookie == null)
-        throw new ArgumentNullException ("cookie");
+        throw new ArgumentNullException (nameof(cookie));
 
       lock (_forState) {
         if (!canSet ())
           return;
 
-        lock (_cookies.SyncRoot)
-          _cookies.SetOrRemove (cookie);
+        lock (CookieCollection.SyncRoot)
+          CookieCollection.SetOrRemove (cookie);
       }
     }
 
@@ -3950,7 +3868,7 @@ namespace WebSocketSharp
         if (username.Contains (':') || !username.IsText ()) {
           var msg = "It contains an invalid character.";
 
-          throw new ArgumentException (msg, "username");
+          throw new ArgumentException (msg, nameof(username));
         }
       }
 
@@ -3958,7 +3876,7 @@ namespace WebSocketSharp
         if (!password.IsText ()) {
           var msg = "It contains an invalid character.";
 
-          throw new ArgumentException (msg, "password");
+          throw new ArgumentException (msg, nameof(password));
         }
       }
 
@@ -4067,19 +3985,19 @@ namespace WebSocketSharp
         if (!Uri.TryCreate (url, UriKind.Absolute, out uri)) {
           var msg = "Not an absolute URI string.";
 
-          throw new ArgumentException (msg, "url");
+          throw new ArgumentException (msg, nameof(url));
         }
 
         if (uri.Scheme != "http") {
           var msg = "The scheme part is not http.";
 
-          throw new ArgumentException (msg, "url");
+          throw new ArgumentException (msg, nameof(url));
         }
 
         if (uri.Segments.Length > 1) {
           var msg = "It includes the path segments.";
 
-          throw new ArgumentException (msg, "url");
+          throw new ArgumentException (msg, nameof(url));
         }
       }
 
@@ -4087,7 +4005,7 @@ namespace WebSocketSharp
         if (username.Contains (':') || !username.IsText ()) {
           var msg = "It contains an invalid character.";
 
-          throw new ArgumentException (msg, "username");
+          throw new ArgumentException (msg, nameof(username));
         }
       }
 
@@ -4095,7 +4013,7 @@ namespace WebSocketSharp
         if (!password.IsText ()) {
           var msg = "It contains an invalid character.";
 
-          throw new ArgumentException (msg, "password");
+          throw new ArgumentException (msg, nameof(password));
         }
       }
 
